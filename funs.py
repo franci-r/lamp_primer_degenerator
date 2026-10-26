@@ -15,10 +15,10 @@ def primer_finder(sequence, primer):
     ali = primer_aligner(sequence, primer)
     # skip for bad alingment 
     if ali is None:
-        print(f"Skipping {name}: primer coverage below 70%")
+        #print(f"Skipping {name}: primer coverage below 70%")
         return None
     # get location
-    print(name)
+    #print(name)
     start = ali.aligned[0][0][0]
     end = ali.aligned[0][0][1]  
     # Include ignored terminal nucleotides
@@ -37,7 +37,9 @@ def primer_aligner(sequence, primer):
     counts = best.counts()
     error_rate = (counts.mismatches + counts.gaps) / len(primer)
     # Reject alignments with more than 30% errors
-    if error_rate <= 0.30 and counts.gaps < 2:
+    # reject not full sequences
+    aligned_length = best.aligned[0][-1][1] - best.aligned[0][0][0]
+    if error_rate <= 0.30 and counts.gaps < 2 and aligned_length == len(primer):
         return best
     else:
         return None
@@ -59,10 +61,16 @@ def create_output_table(motif_table, seq_number, threshold = 10):
     df_perc.columns = range(1, len(df_perc.columns) + 1)
     # add consensus 
     df_perc.loc["Consensus"] = new_names
+    # color 
+    df_perc = df_perc.style.map(
+        lambda x: "background-color: lightcoral"
+        if not isinstance(x, str) and x > threshold
+        else ""
+    )
     return(df_perc)
 
 # wrapper function
-def primer_analysis(primer, primer_direction, threshold, alignment):
+def primer_analysis(primer, primer_direction, threshold, alignment, primer_name):
     primer = primer.upper()
     extracted = []
     for record in alignment:
@@ -85,10 +93,11 @@ def primer_analysis(primer, primer_direction, threshold, alignment):
                 )
             )
     # count % bases at each nt
+    print("Number of extracted sequences:", len(extracted))
     motif = motifs.create(list(extracted))
     seq_number = len(extracted)
     # output number of successful finds
-    print(f"Successfully aligned {seq_number}/{len(alignment)} sequences")
+    print(f"{primer_name} successfully aligned {seq_number}/{len(alignment)} sequences")
     # output table
     return(create_output_table(motif, seq_number, threshold))
 
