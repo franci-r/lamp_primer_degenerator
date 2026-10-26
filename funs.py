@@ -39,7 +39,7 @@ def primer_aligner(sequence, primer):
     # Reject alignments with more than 30% errors
     # reject not full sequences
     aligned_length = best.aligned[0][-1][1] - best.aligned[0][0][0]
-    if error_rate <= 0.30 and counts.gaps < 2 and aligned_length == len(primer):
+    if error_rate <= 0.30 and counts.gaps < 1 and aligned_length == len(primer):
         return best
     else:
         return None
