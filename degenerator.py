@@ -8,29 +8,47 @@ import pandas as pd
 from Bio import motifs
 import argparse
 
-
-# protect from bad alignment 
+# maybe redo and input seeqs, base seq and primer. 
+# do the alignmetn ehre and so find primers by location?
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--input", type=str, required=True)
-parser.add_argument("--primer", type=str, required=True)
-parser.add_argument("--primer_dir", type=str, required=True)
+parser.add_argument("--primers", type=str, required=True)
 parser.add_argument("--threshold", type=float, default=15)
+parser.add_argument("--output", type=str, default="out")
 args = parser.parse_args()
 
 # Read an alignment file (e.g., FASTA, Clustal, PHYLIP)
 alignment = AlignIO.read(args.input, "clustal")
 threshold = args.threshold
-primer = args.primer 
-primer_direction = args.primer_dir 
 
-out_df = primer_analysis(primer, primer_direction, threshold , alignment)
-# color cells 
-out_df = out_df.style.map(
-    lambda x: "background-color: lightcoral"
-    if not isinstance(x, str) and x > threshold
-    else ""
-)
-out_df.to_excel("out.xlsx")
+# process all primers
+primers = list(SeqIO.parse(args.primers, "fasta"))
 
+all_output = {}
+
+for primer in primers: 
+    if primer.id.upper()  in ["F3", "F2", "B1C", "LB"]:
+        primer_direction = "F"
+        out_df_list = primer_analysis(primer.seq, primer_direction, threshold , alignment, primer.id)
+        all_output[primer.id] = out_df_list
+    elif primer.id.upper()  in ["B3", "F1C", "B2", "LF"]:
+        primer_direction = "R"
+        out_df_list = primer_analysis(primer.seq, primer_direction, threshold , alignment, primer.id)
+        all_output[primer.id] = out_df_list
+    else: 
+        print("Unrecognised primer name")
+    
+
+with pd.ExcelWriter(f"{args.output}.xlsx", engine="openpyxl") as writer:
+    for name, output in all_output.items():
+        startrow = 0
+        for df in output:
+            df.to_excel(
+                writer,
+                sheet_name=name,
+                startrow=startrow,
+                index=False
+            )
+            startrow += len(df.data if isinstance(df, pd.io.formats.style.Styler) else df) + 2
