@@ -7,6 +7,7 @@ from Bio import Align
 from funs import *
 import pandas as pd
 from Bio import motifs
+from collections import Counter
 
 def primer_finder(sequence, primer):
     name = sequence.id
@@ -15,10 +16,10 @@ def primer_finder(sequence, primer):
     ali = primer_aligner(sequence, primer)
     # skip for bad alingment 
     if ali is None:
-        print(f"Skipping {name}: primer coverage below 70%")
+        #print(f"Skipping {name}: primer coverage below 70%")
         return None
     # get location
-    print(name)
+    #print(name)
     start = ali.aligned[0][0][0]
     end = ali.aligned[0][0][1]  
     # Include ignored terminal nucleotides
@@ -37,7 +38,9 @@ def primer_aligner(sequence, primer):
     counts = best.counts()
     error_rate = (counts.mismatches + counts.gaps) / len(primer)
     # Reject alignments with more than 30% errors
-    if error_rate <= 0.30 and counts.gaps < 2:
+    # reject not full sequences
+    aligned_length = best.aligned[0][-1][1] - best.aligned[0][0][0]
+    if error_rate <= 0.30 and counts.gaps < 1 and aligned_length == len(primer):
         return best
     else:
         return None
@@ -59,10 +62,18 @@ def create_output_table(motif_table, seq_number, threshold = 10):
     df_perc.columns = range(1, len(df_perc.columns) + 1)
     # add consensus 
     df_perc.loc["Consensus"] = new_names
+    # add index info 
+    df_perc.insert(0, "Nucleotide", ["A", "C", "G", "T", "Degenerate"])
+    # color 
+    df_perc = df_perc.style.map(
+        lambda x: "background-color: lightcoral"
+        if not isinstance(x, str) and x > threshold
+        else ""
+    )
     return(df_perc)
 
 # wrapper function
-def primer_analysis(primer, primer_direction, threshold, alignment):
+def primer_analysis(primer, primer_direction, threshold, alignment, primer_name):
     primer = primer.upper()
     extracted = []
     for record in alignment:
@@ -85,10 +96,41 @@ def primer_analysis(primer, primer_direction, threshold, alignment):
                 )
             )
     # count % bases at each nt
+    print("Number of extracted sequences:", len(extracted))
     motif = motifs.create(list(extracted))
     seq_number = len(extracted)
     # output number of successful finds
-    print(f"Successfully aligned {seq_number}/{len(alignment)} sequences")
-    # output table
-    return(create_output_table(motif, seq_number, threshold))
+    print(f"{primer_name} successfully aligned {seq_number}/{len(alignment)} sequences")
+    # output tables
+    output = [unique_seq_printer(extracted), create_output_table(motif, seq_number, threshold)]
+    return(output)
+
+def unique_seq_printer(extracted):
+    extracted_seqs = [x.seq for x in extracted]
+    seq_counts = Counter(extracted_seqs)
+    # create df for output
+    df = pd.DataFrame(
+       [list(str(seq)) + [count] for seq, count in seq_counts.items()])
+    # Rename columns
+    df.columns = list(range(1, len(df.columns))) + ["Seq #"]
+    # order by counts 
+    df = df.sort_values(by="Seq #", ascending=False)
+    #move the column 
+    df.insert(0, "Sequence #", df.pop("Seq #"))
+    # colour by nt 
+    df = df.style.map(color_nucleotide)
+    return(df)
+
+# color palette for nt 
+colors = {
+    "A": "#E69F00",  # Orange
+    "C": "#0072B2",  # Blue
+    "G": "#009E73",  # Green
+    "T": "#CC79A7"   # Purple
+}
+
+def color_nucleotide(val):
+    color = colors.get(val, "")
+    return f"background-color: {color}; color: black" if color else ""
+
 
