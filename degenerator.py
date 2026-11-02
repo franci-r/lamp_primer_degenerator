@@ -7,6 +7,8 @@ from funs import *
 import pandas as pd
 from Bio import motifs
 import argparse
+import subprocess
+
 
 # maybe redo and input seeqs, base seq and primer. 
 # do the alignmetn ehre and so find primers by location?
@@ -19,11 +21,23 @@ parser.add_argument("--threshold", type=float, default=15)
 parser.add_argument("--output", type=str, default="out")
 args = parser.parse_args()
 
-# Read an alignment file (e.g., FASTA, Clustal, PHYLIP)
-alignment = AlignIO.read(args.input, "clustal")
-threshold = args.threshold
 
+# align 
+subprocess.run(
+    [
+        "clustalo",
+        "-i", args.input,
+        "-o", "temp_alignment.aln",
+        "--outfmt=clu",
+        "--force",
+        "--threads=1"
+    ],
+    check=True
+)
+
+alignment = AlignIO.read("temp_alignment.aln", "clustal")
 # process all primers
+threshold = args.threshold
 primers = list(SeqIO.parse(args.primers, "fasta"))
 
 all_output = {}
