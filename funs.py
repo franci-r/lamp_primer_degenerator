@@ -166,6 +166,9 @@ def primer_mismatch_counter(sequences, primer):
     results = []
     for record in region:
         sequence = str(record.seq).upper()
+        # Skip sequences with more than 5 gaps
+        if sequence.count("-") > 5:
+            continue
         mismatches = 0
         for base, primer_base in zip(sequence, primer):
             # Ignore gaps in the primer
