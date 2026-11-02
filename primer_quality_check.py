@@ -11,6 +11,8 @@ import subprocess
 from Bio.Data.IUPACData import ambiguous_dna_values
 import seaborn as sns
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator
+
 
 
 parser = argparse.ArgumentParser()
@@ -67,6 +69,10 @@ sns.histplot(
 
 plt.xlabel("Number of mismatches")
 plt.ylabel("Percentage of sequences (%)")
+
+# Set y-axis ticks every 10%
+plt.gca().yaxis.set_major_locator(MultipleLocator(10))
+
 plt.savefig(f"{args.output}_mismatch_percent.png", dpi=300, bbox_inches="tight")
 plt.close()
 
