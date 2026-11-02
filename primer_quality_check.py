@@ -53,7 +53,22 @@ plt.ylabel("Number of sequences")
 plt.savefig(f"{args.output}_mismatch.png", dpi=300, bbox_inches="tight")
 plt.close()
 
+# Plot 2: Percentages
+sns.histplot(
+    data=df,
+    x="mismatches",
+    hue="primer",
+    multiple="dodge",
+    discrete=True,
+    shrink=0.8,
+    stat="percent",
+    common_norm=False
+)
 
+plt.xlabel("Number of mismatches")
+plt.ylabel("Percentage of sequences (%)")
+plt.savefig(f"{args.output}_mismatch_percent.png", dpi=300, bbox_inches="tight")
+plt.close()
 
 
 
