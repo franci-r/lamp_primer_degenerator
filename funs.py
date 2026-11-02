@@ -8,6 +8,10 @@ from funs import *
 import pandas as pd
 from Bio import motifs
 from collections import Counter
+import subprocess
+from Bio.Data.IUPACData import ambiguous_dna_values
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 def primer_finder(sequence, primer):
     name = sequence.id
@@ -70,7 +74,7 @@ def create_output_table(motif_table, seq_number, threshold = 10):
         if not isinstance(x, str) and x > threshold
         else ""
     )
-    return(df_perc)
+    return df_perc
 
 # wrapper function
 def primer_analysis(primer, primer_direction, threshold, alignment, primer_name):
@@ -132,5 +136,52 @@ colors = {
 def color_nucleotide(val):
     color = colors.get(val, "")
     return f"background-color: {color}; color: black" if color else ""
+
+
+# this is for the second functionality 
+# Concatenate
+def primer_mismatch_counter(sequences, primer):
+    combined = sequences + [primer]
+    # Save as FASTA
+    SeqIO.write(combined, "combined.fasta", "fasta")
+    # align
+    subprocess.run(
+    [
+    "clustalo",
+    "-i", "combined.fasta",
+    "-o", "temp_alignment.aln",
+    "--outfmt=clu",
+    "--force",
+    "--threads=1"
+    ],
+    check=True)
+    alignment = AlignIO.read("temp_alignment.aln", "clustal")
+    # get primer location 
+    seq = str(alignment[-1].seq)
+    start = next(i for i, base in enumerate(seq) if base != "-")
+    end = len(seq) - next(i for i, base in enumerate(seq[::-1]) if base != "-")
+    # extract only primer location 
+    region = alignment[:-1, start:end]
+    # calculate
+    results = []
+    for record in region:
+        sequence = str(record.seq).upper()
+        mismatches = 0
+        for base, primer_base in zip(sequence, primer):
+            # Ignore gaps in the primer
+            if primer_base == "-":
+                continue
+                # Count gaps and unknown bases as mismatches
+            if base in ["N"]:
+                mismatches += 1
+                # Check compatibility with degenerate primer bases
+            elif base not in ambiguous_dna_values[primer_base]:
+                mismatches += 1
+        results.append({
+        "accession": record.id,
+        "mismatches": mismatches})
+    out = pd.DataFrame(results)
+    out["primer"] = primer.id
+    return pd.DataFrame(out).iloc[:, 1:3]
 
 
