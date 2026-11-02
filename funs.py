@@ -169,7 +169,7 @@ def primer_mismatch_counter(sequences, primer):
         mismatches = 0
         for base, primer_base in zip(sequence, primer):
             # Ignore gaps in the primer
-            if primer_base == "-":
+             if base in ["-", "N"] or primer_base == "-":
                 continue
                 # Count gaps and unknown bases as mismatches
             if base in ["N"]:
