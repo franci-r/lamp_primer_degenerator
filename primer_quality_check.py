@@ -70,8 +70,9 @@ sns.histplot(
 plt.xlabel("Number of mismatches")
 plt.ylabel("Percentage of sequences (%)")
 
-# Set y-axis ticks every 10%
-plt.gca().yaxis.set_major_locator(MultipleLocator(10))
+# Set y-axis from 0 to 100 with ticks every 10
+plt.ylim(0, 100)
+plt.yticks(range(0, 101, 10))
 
 plt.savefig(f"{args.output}_mismatch_percent.png", dpi=300, bbox_inches="tight")
 plt.close()
