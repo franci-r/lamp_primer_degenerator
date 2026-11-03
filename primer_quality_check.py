@@ -14,7 +14,6 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator
 
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--input", type=str, required=True)
 parser.add_argument("--primers", type=str, required=True)
@@ -73,6 +72,8 @@ plt.ylabel("Percentage of sequences (%)")
 # Set y-axis from 0 to 100 with ticks every 10
 plt.ylim(0, 100)
 plt.yticks(range(0, 101, 10))
+plt.gca().xaxis.set_major_locator(MultipleLocator(1))
+
 
 plt.savefig(f"{args.output}_mismatch_percent.png", dpi=300, bbox_inches="tight")
 plt.close()
